@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DocScan Pro — Document Cleaner</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* Dark mode (default) */
+  --bg:       #0c0e14;
+  --surface:  #13161f;
+  --surface2: #1c2030;
+  --border:   rgba(255,255,255,.07);
+  --accent:   #4fffb0;
+  --accent2:  #7c6bff;
+  --danger:   #ff5f7e;
+  --text:     #e8eaf0;
+  --muted:    #5a6278;
+  --radius:   14px;
+  --shadow:   0 4px 30px rgba(0,0,0,.4);
+  --theme-transition: background 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+}
+
+/* ── Light Mode ── */
+[data-theme="light"] {
+  --bg:       #f0f2f7;
+  --surface:  #ffffff;
+  --surface2: #e8edf5;
+  --border:   rgba(0,0,0,.09);
+  --accent:   #00b87a;
+  --accent2:  #5b4ecc;
+  --danger:   #e8364e;
+  --text:     #1a1e2e;
+  --muted:    #7a8299;
+  --shadow:   0 4px 30px rgba(0,0,0,.1);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;transition:background 0.4s ease,color 0.4s ease}
+
+/* ── Global smooth transitions for theme switch ── */
+.header,.panel,.rcard,.rcard-head,.modal,.drop,.mode-btn,.tog,.btn-secondary,.prog,.res-sec,.rcard-foot,.modal-head,.modal-foot{transition:background 0.35s ease,border-color 0.35s ease,color 0.35s ease,box-shadow 0.35s ease!important}
+
+/* ── Noise overlay ── */
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.4;transition:opacity 0.4s ease}
+[data-theme="light"] body::before{opacity:.12}
+
+/* ── Theme Toggle Button ── */
+.theme-toggle{width:44px;height:24px;border-radius:12px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;position:relative;transition:background 0.35s ease,border-color 0.35s ease;flex-shrink:0;outline:none}
+.theme-toggle::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--accent);transition:transform 0.35s cubic-bezier(.68,-.6,.32,1.6),background 0.35s ease;box-shadow:0 0 8px rgba(79,255,176,.4)}
+[data-theme="light"] .theme-toggle::after{transform:translateX(20px);background:var(--accent2);box-shadow:0 0 8px rgba(91,78,204,.4)}
+.theme-icon{font-size:14px;transition:transform 0.4s ease,opacity 0.3s ease;display:inline-block;line-height:1}
+
+/* ── Light mode adjustments ── */
+[data-theme="light"] .drop{background:var(--surface);border-color:rgba(0,184,122,.25)}
+[data-theme="light"] .drop:hover,[data-theme="light"] .drop.over{background:rgba(0,184,122,.04)}
+[data-theme="light"] .mode-btn.active{background:rgba(0,184,122,.1);border-color:var(--accent);color:var(--accent)}
+[data-theme="light"] .tog.on{background:rgba(0,184,122,.08);border-color:rgba(0,184,122,.35)}
+[data-theme="light"] input[type=range]{background:#dde1ec}
+[data-theme="light"] input[type=range]::-webkit-slider-thumb{box-shadow:0 0 10px rgba(0,184,122,.4)}
+[data-theme="light"] .badge{background:rgba(0,184,122,.12);color:var(--accent);border-color:rgba(0,184,122,.3)}
+[data-theme="light"] .tag{background:rgba(0,184,122,.1);border-color:rgba(0,184,122,.25)}
+[data-theme="light"] .dl-btn{background:rgba(0,184,122,.08);border-color:rgba(0,184,122,.25)}
+[data-theme="light"] .dl-btn:hover{background:rgba(0,184,122,.18)}
+[data-theme="light"] .pbar{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+[data-theme="light"] .pstep.done{background:rgba(0,184,122,.1);color:var(--accent);border-color:rgba(0,184,122,.3)}
+[data-theme="light"] .logo span{background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+[data-theme="light"] .zip-btn{background:rgba(91,78,204,.1)}
+[data-theme="light"] .print-all-btn{background:rgba(0,184,122,.08)}
+[data-theme="light"] .modal-overlay{background:rgba(0,0,0,.6)}
+
+/* ── Header ── */
+.header{position:sticky;top:0;z-index:100;background:rgba(12,14,20,.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 40px;height:62px;display:flex;align-items:center;justify-content:space-between;transition:background 0.35s ease,border-color 0.35s ease}
+[data-theme="light"] .header{background:rgba(240,242,247,.88)}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;display:flex;align-items:center;gap:10px}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.logo span{background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header-right{display:flex;align-items:center;gap:12px}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.status-txt{font-size:12px;color:var(--muted)}
+
+
+/* ── Main ── */
+.main{max-width:1100px;margin:0 auto;padding:36px 20px 80px}
+
+/* ── Hero ── */
+.hero{text-align:center;margin-bottom:40px;animation:fadeUp .6s ease}
+.hero h2{font-family:'Syne',sans-serif;font-size:clamp(28px,5vw,46px);font-weight:800;line-height:1.1;margin-bottom:12px}
+.hero h2 em{font-style:normal;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero p{color:var(--muted);font-size:15px;max-width:520px;margin:0 auto}
+@keyframes fadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Drop zone ── */
+.drop{background:var(--surface);border:1.5px dashed rgba(79,255,176,.3);border-radius:20px;padding:52px 28px;text-align:center;cursor:pointer;transition:.3s;position:relative;animation:fadeUp .7s ease}
+.drop:hover,.drop.over{border-color:var(--accent);background:rgba(79,255,176,.04);transform:scale(1.005)}
+.drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.drop-icon{font-size:54px;margin-bottom:14px;filter:drop-shadow(0 0 20px rgba(79,255,176,.3))}
+.drop h3{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:#fff;margin-bottom:6px}
+.drop p{color:var(--muted);font-size:13px}
+.drop .formats{display:inline-flex;gap:6px;margin-top:14px;flex-wrap:wrap;justify-content:center}
+.fmt{padding:3px 10px;border-radius:20px;font-size:11px;background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--muted)}
+
+/* ── File tags ── */
+.tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.tag{background:rgba(79,255,176,.08);border:1px solid rgba(79,255,176,.2);border-radius:20px;padding:5px 14px;font-size:12px;color:var(--accent);display:flex;align-items:center;gap:6px;animation:popIn .2s ease}
+@keyframes popIn{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
+.tag .rm{cursor:pointer;color:var(--muted);transition:.15s}
+.tag .rm:hover{color:var(--danger)}
+
+/* ── Controls panel ── */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px 26px;margin-top:16px;animation:fadeUp .8s ease}
+.panel-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.panel-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+/* Mode selector */
+.mode-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+.mode-btn{padding:10px 8px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;font-size:12px;text-align:center;transition:.2s;font-family:'DM Sans',sans-serif}
+.mode-btn .mi{font-size:18px;display:block;margin-bottom:4px}
+.mode-btn:hover{border-color:rgba(79,255,176,.3);color:var(--text)}
+.mode-btn.active{background:rgba(79,255,176,.1);border-color:var(--accent);color:var(--accent)}
+
+/* Sliders */
+.ctrl label{display:block;font-size:12px;color:var(--muted);margin-bottom:8px;display:flex;justify-content:space-between}
+.ctrl label b{color:var(--accent)}
+input[type=range]{width:100%;appearance:none;height:4px;background:var(--surface2);border-radius:2px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{appearance:none;width:16px;height:16px;border-radius:50%;background:var(--accent);cursor:pointer;box-shadow:0 0 10px rgba(79,255,176,.4);transition:.15s}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2)}
+
+/* Toggles */
+.togs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tog{padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;font-size:12px;text-align:left;transition:.2s;display:flex;align-items:center;gap:8px}
+.tog .ti{font-size:16px}
+.tog:hover{border-color:rgba(79,255,176,.2)}
+.tog.on{background:rgba(79,255,176,.08);border-color:rgba(79,255,176,.35);color:var(--accent)}
+.tog.on .ti{filter:drop-shadow(0 0 6px var(--accent))}
+
+/* Camera */
+.cam-section{background:var(--surface2);border-radius:12px;padding:16px;margin-top:12px;display:none}
+.cam-section.show{display:block;animation:fadeUp .3s ease}
+#camPreview{width:100%;border-radius:8px;max-height:300px;object-fit:cover;background:#000}
+.cam-btns{display:flex;gap:10px;margin-top:10px}
+
+/* Action buttons */
+.actions{display:flex;gap:10px;margin-top:16px}
+.btn{flex:1;padding:14px;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;transition:.2s;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-primary{background:linear-gradient(135deg,var(--accent),#2bffce);color:#0c1a12}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(79,255,176,.25)}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-secondary{background:var(--surface2);border:1px solid var(--border);color:var(--text)}
+.btn-secondary:hover{border-color:rgba(124,107,255,.4);color:var(--accent2)}
+.btn-danger{background:rgba(255,95,126,.1);border:1px solid rgba(255,95,126,.3);color:var(--danger)}
+
+/* Progress */
+.prog{display:none;margin-top:16px;background:var(--surface);border-radius:12px;padding:20px 24px}
+.prog-top{display:flex;justify-content:space-between;margin-bottom:10px;font-size:13px}
+.prog-top .step{color:var(--accent)}
+.pbg{background:var(--surface2);border-radius:6px;height:6px;overflow:hidden}
+.pbar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:6px;transition:width .4s cubic-bezier(.4,0,.2,1);width:0%}
+.psteps{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
+.pstep{padding:3px 10px;border-radius:20px;font-size:11px;background:var(--surface2);color:var(--muted);border:1px solid var(--border);transition:.3s}
+.pstep.done{background:rgba(79,255,176,.1);color:var(--accent);border-color:rgba(79,255,176,.3)}
+.pstep.active{background:rgba(124,107,255,.1);color:var(--accent2);border-color:rgba(124,107,255,.3);animation:blink .8s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.5}}
+
+/* ── Results ── */
+.res-sec{margin-top:32px}
+.res-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.res-header h2{font-family:'Syne',sans-serif;font-size:20px;font-weight:700}
+.res-header h2 span{color:var(--accent)}
+.res-actions{display:flex;gap:8px}
+
+.zip-btn{padding:9px 18px;background:rgba(124,107,255,.15);border:1px solid rgba(124,107,255,.35);border-radius:9px;color:var(--accent2);cursor:pointer;font-size:13px;font-weight:600;transition:.2s;font-family:'DM Sans',sans-serif}
+.zip-btn:hover{background:rgba(124,107,255,.28)}
+.print-all-btn{padding:9px 18px;background:rgba(79,255,176,.08);border:1px solid rgba(79,255,176,.25);border-radius:9px;color:var(--accent);cursor:pointer;font-size:13px;font-weight:600;transition:.2s;font-family:'DM Sans',sans-serif}
+.print-all-btn:hover{background:rgba(79,255,176,.15)}
+
+/* Result card */
+.rcard{background:var(--surface);border:1px solid var(--border);border-radius:18px;overflow:hidden;margin-bottom:20px;animation:slideIn .4s cubic-bezier(.4,0,.2,1);transition:.2s}
+.rcard:hover{border-color:rgba(79,255,176,.15)}
+@keyframes slideIn{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+
+.rcard-head{padding:14px 20px;background:var(--surface2);display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)}
+.rcard-fn{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px}
+.rcard-meta{display:flex;gap:8px;align-items:center}
+.badge{font-size:11px;padding:3px 10px;border-radius:20px;background:rgba(79,255,176,.1);color:var(--accent);border:1px solid rgba(79,255,176,.25);font-weight:600}
+.info-chip{font-size:11px;color:var(--muted);background:var(--surface);border:1px solid var(--border);padding:2px 9px;border-radius:20px}
+
+/* Preview split */
+.prev-wrap{display:grid;grid-template-columns:1fr 1fr;position:relative}
+.prev-pane{padding:16px;text-align:center;position:relative}
+.prev-pane+.prev-pane{border-left:1px solid var(--border)}
+.prev-lbl{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:6px}
+.prev-lbl .dot{width:6px;height:6px;border-radius:50%}
+.prev-lbl .dot.red{background:#ff5f5f}
+.prev-lbl .dot.green{background:var(--accent)}
+.prev-pane img{max-width:100%;max-height:260px;border-radius:8px;object-fit:contain;background:#080a10;border:1px solid var(--border);cursor:zoom-in;transition:.2s}
+.prev-pane img:hover{border-color:rgba(79,255,176,.3)}
+
+/* ── Rotation Image Box ── */
+.rot-img-box{
+  width:100%;height:260px;
+  overflow:hidden;
+  border-radius:8px;
+  background:#080a10;
+  border:1px solid var(--border);
+  cursor:zoom-in;
+  display:flex;align-items:center;justify-content:center;
+  transition:border-color .2s;
+  position:relative;
+}
+.rot-img-box:hover{border-color:rgba(79,255,176,.3)}
+.rot-img-box img{
+  display:block;
+  object-fit:contain;
+  max-width:100%;
+  max-height:260px;
+  transition:transform .4s cubic-bezier(.4,0,.2,1);
+  transform-origin:center center;
+}
+
+/* ── Rotation Toolbar ── */
+.rot-bar{
+  display:flex;align-items:center;justify-content:center;
+  gap:6px;
+  margin-top:8px;
+  padding:5px 10px;
+  background:rgba(255,255,255,.04);
+  border:1px solid var(--border);
+  border-radius:10px;
+}
+[data-theme="light"] .rot-bar{background:rgba(0,0,0,.04);border-color:rgba(0,0,0,.08)}
+.rot-btn{
+  height:28px;
+  padding:0 10px;
+  border-radius:7px;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  color:var(--muted);
+  cursor:pointer;
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:12px;
+  font-family:'DM Sans',sans-serif;
+  font-weight:500;
+  transition:.18s;
+  white-space:nowrap;
+}
+.rot-btn .ri{font-size:15px;line-height:1}
+.rot-btn:hover{background:rgba(124,107,255,.15);border-color:rgba(124,107,255,.4);color:var(--accent2)}
+.rot-btn:active{transform:scale(.94)}
+[data-theme="light"] .rot-btn{background:#fff;border-color:rgba(0,0,0,.1);color:#555}
+[data-theme="light"] .rot-btn:hover{background:rgba(91,78,204,.08);border-color:var(--accent2);color:var(--accent2)}
+.rot-deg{
+  font-size:11px;font-weight:700;
+  font-family:'DM Sans',sans-serif;
+  color:var(--muted);
+  background:rgba(255,255,255,.05);
+  border-radius:6px;
+  padding:2px 8px;
+  min-width:34px;
+  text-align:center;
+  transition:color .2s,background .2s;
+}
+.rot-deg.lit{color:var(--accent2);background:rgba(124,107,255,.12)}
+[data-theme="light"] .rot-deg{background:rgba(0,0,0,.05);color:#777}
+[data-theme="light"] .rot-deg.lit{color:var(--accent2);background:rgba(91,78,204,.1)}
+.rot-divider{width:1px;height:16px;background:var(--border);flex-shrink:0}
+.rot-reset{
+  height:28px;padding:0 8px;
+  border-radius:7px;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  color:var(--muted);
+  cursor:pointer;
+  font-size:11px;
+  font-family:'DM Sans',sans-serif;
+  transition:.18s;
+  white-space:nowrap;
+}
+.rot-reset:hover{border-color:rgba(255,95,126,.4);color:var(--danger)}
+[data-theme="light"] .rot-reset{background:#fff;border-color:rgba(0,0,0,.1);color:#999}
+
+/* Slider compare (hidden by default, shown on hover) */
+.size-saved{font-size:11px;color:var(--accent);margin-top:6px}
+
+.rcard-foot{padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.dl-btn{padding:8px 16px;background:rgba(79,255,176,.08);border:1px solid rgba(79,255,176,.25);border-radius:8px;color:var(--accent);text-decoration:none;font-size:13px;font-weight:600;transition:.2s;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.dl-btn:hover{background:rgba(79,255,176,.18)}
+.preview-btn{padding:8px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-weight:500;cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:6px;font-family:'DM Sans',sans-serif}
+.preview-btn:hover{border-color:rgba(124,107,255,.4);color:var(--accent2)}
+.print-btn{padding:8px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-weight:500;cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:6px;font-family:'DM Sans',sans-serif}
+.print-btn:hover{border-color:rgba(79,255,176,.3);color:var(--accent)}
+
+.err-card{background:rgba(255,95,126,.06);border:1px solid rgba(255,95,126,.2);border-radius:12px;padding:14px 18px;color:var(--danger);margin-bottom:16px;font-size:13px;display:flex;gap:10px;align-items:center}
+
+/* ── Preview Modal ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:1000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(8px);animation:modalIn .2s ease}
+.modal-overlay.show{display:flex}
+@keyframes modalIn{from{opacity:0}to{opacity:1}}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:20px;max-width:92vw;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 40px 120px rgba(0,0,0,.6)}
+.modal-head{padding:16px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.modal-head h3{font-family:'Syne',sans-serif;font-size:15px;font-weight:700}
+.modal-close{width:32px;height:32px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:.15s}
+.modal-close:hover{background:var(--danger);border-color:var(--danger)}
+.modal-body{overflow:auto;padding:20px;flex:1;display:flex;gap:16px;min-height:0}
+.modal-pane{flex:1;text-align:center}
+.modal-pane img{max-width:100%;border-radius:10px;border:1px solid var(--border)}
+.modal-pane h4{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:10px}
+.modal-foot{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;flex-shrink:0}
+
+/* ── Print styles ── */
+@media print {
+  body > *:not(#printFrame){display:none!important}
+  #printFrame{display:block!important;position:fixed;inset:0;width:100%;height:100%;border:none}
+}
+#printFrame{display:none}
+
+/* ── Camera modal ── */
+.cam-modal{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:1001;display:none;align-items:center;justify-content:center;backdrop-filter:blur(10px)}
+.cam-modal.show{display:flex;animation:modalIn .2s ease}
+.cam-box{background:var(--surface);border-radius:20px;border:1px solid var(--border);overflow:hidden;width:min(540px,95vw)}
+.cam-head{padding:16px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.cam-head h3{font-family:'Syne',sans-serif;font-size:15px;font-weight:700}
+#liveVideo{width:100%;max-height:380px;object-fit:cover;background:#000;display:block}
+.cam-actions{padding:16px;display:flex;gap:10px}
+#snapCanvas{display:none}
+
+/* Responsive */
+@media(max-width:640px){.grid3,.grid2,.mode-grid,.prev-wrap{grid-template-columns:1fr!important}.header{padding:0 18px}.main{padding:20px 14px 60px}}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+
+
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header class="header">
+  <div class="logo">
+    <div class="logo-icon">📄</div>
+    <span>DocScan Pro</span>
+  </div>
+  <div class="header-right">
+    <!-- Theme Toggle -->
+    <span class="theme-icon" id="themeIcon">🌙</span>
+    <button class="theme-toggle" id="themeToggle" title="Light/Dark toggle" onclick="toggleTheme()" aria-label="Toggle theme"></button>
+
+    <div class="status-dot"></div>
+    <span class="status-txt">Ready</span>
+  </div>
+</header>
+
+<!-- ── Main ── -->
+<main class="main">
+
+  <!-- Hero -->
+  <div class="hero">
+    <h2>Documents <em>Crystal Clear</em></h2>
+    <p>Remove shadows, clean & print your documents in seconds</p>
+  </div>
+
+  <!-- Drop Zone -->
+  <div class="drop" id="drop">
+    <input type="file" id="filein" multiple accept="image/*,.pdf">
+    <div class="drop-icon">🗂️</div>
+    <h3>Drop files here or click to browse</h3>
+    <p></p>
+    <div class="formats">
+      <span class="fmt">JPG</span><span class="fmt">PNG</span>
+      <span class="fmt">WEBP</span><span class="fmt">BMP</span>
+      <span class="fmt">PDF</span>
+    </div>
+  </div>
+  <div class="tags" id="tags"></div>
+
+  <!-- Controls -->
+  <div class="panel">
+    <div class="panel-title">⚙️ Processing Mode</div>
+    <div class="mode-grid">
+      <button class="mode-btn active" data-mode="standard" onclick="setMode(this)"><span class="mi">📄</span>Standard</button>
+      <button class="mode-btn" data-mode="scan" onclick="setMode(this)"><span class="mi">🖨️</span>Scan</button>
+      <button class="mode-btn" data-mode="soft" onclick="setMode(this)"><span class="mi">🌤️</span>Soft</button>
+      <button class="mode-btn" data-mode="grayscale" onclick="setMode(this)"><span class="mi">🎞️</span>Grayscale</button>
+    </div>
+
+    <div class="panel-title">🎛️ Adjustments</div>
+    <div class="grid3">
+      <div class="ctrl">
+        <label>Brightness <b id="bval">0</b></label>
+        <input type="range" id="bright" min="-80" max="80" value="0">
+      </div>
+      <div class="ctrl">
+        <label>Contrast <b id="cval">1.0×</b></label>
+        <input type="range" id="cont" min="5" max="30" value="10">
+      </div>
+      <div class="ctrl">
+        <label>Sharpness <b id="sval">OFF</b></label>
+        <input type="range" id="sharp_range" min="0" max="1" value="0" step="1">
+      </div>
+    </div>
+
+    <div class="panel-title" style="margin-top:18px">✨ Smart Features</div>
+    <div class="togs" style="grid-template-columns:repeat(4,1fr)">
+      <div class="tog" id="tDenoise" onclick="tog('tDenoise')"><span class="ti">🔇</span>Denoise</div>
+      <div class="tog" id="tDeskew" onclick="tog('tDeskew')"><span class="ti">📐</span>Deskew</div>
+      <div class="tog" id="tBorder" onclick="tog('tBorder')"><span class="ti">✂️</span>Crop Border</div>
+    </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="actions">
+    <button class="btn btn-primary" id="goBtn" onclick="run()">
+      <span>🚀</span> Process Now
+    </button>
+    <button class="btn btn-secondary" onclick="clearAll()">
+      <span>🗑️</span> Clear
+    </button>
+  </div>
+
+  <!-- Progress -->
+  <div class="prog" id="prog">
+    <div class="prog-top">
+      <span>Processing...</span>
+      <span class="step" id="progStep">Uploading</span>
+    </div>
+    <div class="pbg"><div class="pbar" id="pbar"></div></div>
+    <div class="psteps">
+      <span class="pstep active" id="ps1">📤 Upload</span>
+      <span class="pstep" id="ps2">🔍 Shadow Remove</span>
+      <span class="pstep" id="ps3">✨ Clean</span>
+      <span class="pstep" id="ps4">📦 Compress</span>
+      <span class="pstep" id="ps5">✅ Done</span>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="res-sec" id="resSec" style="display:none">
+    <div class="res-header">
+      <h2>Results <span id="resCount"></span></h2>
+      <div class="res-actions">
+        <button class="print-all-btn" onclick="printAll()">🖨️ Print All</button>
+        <button class="zip-btn" onclick="dlZip()">📦 ZIP Download</button>
+      </div>
+    </div>
+    <div id="resCont"></div>
+  </div>
+
+</main>
+
+<!-- ── Preview Modal ── -->
+<div class="modal-overlay" id="previewModal">
+  <div class="modal" style="width:min(900px,94vw)">
+    <div class="modal-head">
+      <h3 id="modalTitle">Preview</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot">
+      <button class="print-btn" id="modalPrintBtn" onclick="printModal()">🖨️ Print</button>
+      <a class="dl-btn" id="modalDlBtn">⬇️ Download</a>
+      <button class="preview-btn" onclick="closeModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Camera Modal ── -->
+<div class="cam-modal" id="camModal">
+  <div class="cam-box">
+    <div class="cam-head">
+      <h3>📷 Camera Scan</h3>
+      <button class="modal-close" onclick="closeCam()">✕</button>
+    </div>
+    <video id="liveVideo" autoplay playsinline></video>
+    <canvas id="snapCanvas"></canvas>
+    <div class="cam-actions">
+      <button class="btn btn-primary" style="flex:2" onclick="snapPhoto()">📸 Capture</button>
+      <button class="btn btn-secondary" style="flex:1" onclick="closeCam()">Cancel</button>
+    </div>
+  </div>
+
+
+<!-- Print iframe -->
+<iframe id="printFrame"></iframe>
+
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────
+let files       = [];
+let tState      = { tDenoise: false, tDeskew: false, tBorder: false };
+let currentMode = 'standard';
+let tokens      = [];
+let allResults  = [];
+let currentModalAfterB64 = '';
+let currentModalToken    = '';
+let currentModalFilename = '';
+
+// ── File handling ──────────────────────────────────────────────────────────
+const drop = document.getElementById('drop');
+drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('over'); addFiles(e.dataTransfer.files); });
+document.getElementById('filein').addEventListener('change', e => { addFiles(e.target.files); e.target.value=''; });
+
+function addFiles(fl) { for (const f of fl) files.push(f); renderTags(); }
+
+function renderTags() {
+  const el = document.getElementById('tags');
+  el.innerHTML = '';
+  files.forEach((f, i) => {
+    const d = document.createElement('div'); d.className = 'tag';
+    d.innerHTML = `📄 ${f.name} <span class="rm" onclick="rmFile(${i})">✕</span>`;
+    el.appendChild(d);
+  });
+}
+
+function rmFile(i) { files.splice(i, 1); renderTags(); }
+
+function clearAll() {
+  files = []; tokens = []; allResults = [];
+  renderTags();
+  document.getElementById('resSec').style.display = 'none';
+  document.getElementById('resCont').innerHTML = '';
+}
+
+// ── Controls ───────────────────────────────────────────────────────────────
+function setMode(btn) {
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentMode = btn.dataset.mode;
+}
+
+function tog(id) {
+  tState[id] = !tState[id];
+  document.getElementById(id).classList.toggle('on', tState[id]);
+}
+
+document.getElementById('bright').addEventListener('input', function() {
+  document.getElementById('bval').textContent = this.value;
+});
+document.getElementById('cont').addEventListener('input', function() {
+  document.getElementById('cval').textContent = (this.value/10).toFixed(1) + '×';
+});
+document.getElementById('sharp_range').addEventListener('input', function() {
+  document.getElementById('sval').textContent = this.value == '1' ? 'ON' : 'OFF';
+});
+
+
+// ── Progress animation ─────────────────────────────────────────────────────
+function animateProgress() {
+  const steps = ['ps1','ps2','ps3','ps4','ps5'];
+  const labels= ['📤 Upload','🔍 Shadow Remove','✨ Clean','📦 Compress','✅ Done'];
+  let idx = 0; let p = 0;
+  document.querySelectorAll('.pstep').forEach(s=>s.classList.remove('done','active'));
+  document.getElementById('ps1').classList.add('active');
+
+  const bar = document.getElementById('pbar');
+  const step = document.getElementById('progStep');
+
+  const iv = setInterval(() => {
+    p += 1.2 + Math.random()*2;
+    if (p > 90) p = 90;
+    bar.style.width = p + '%';
+    const newIdx = Math.min(Math.floor(p / 20), 4);
+    if (newIdx > idx) {
+      document.getElementById(steps[idx]).classList.remove('active');
+      document.getElementById(steps[idx]).classList.add('done');
+      idx = newIdx;
+      if (idx < 5) {
+        document.getElementById(steps[idx]).classList.add('active');
+        step.textContent = labels[idx];
+      }
+    }
+  }, 220);
+  return {iv, bar, steps, step};
+}
+
+// ── Main process ───────────────────────────────────────────────────────────
+async function run() {
+  if (!files.length) { alert('Please select at least one file!'); return; }
+
+  const btn = document.getElementById('goBtn');
+  btn.disabled = true; btn.innerHTML = '<span>⏳</span> Processing...';
+  document.getElementById('prog').style.display = 'block';
+  document.getElementById('resSec').style.display = 'none';
+  document.getElementById('resCont').innerHTML = '';
+  tokens = []; allResults = [];
+
+  const {iv, bar, steps, step} = animateProgress();
+
+  const fd = new FormData();
+  for (const f of files) fd.append('images', f);
+  fd.append('brightness', document.getElementById('bright').value);
+  fd.append('contrast',   (document.getElementById('cont').value/10).toFixed(1));
+  fd.append('mode',       currentMode);
+  fd.append('sharpness',  document.getElementById('sharp_range').value == '1');
+  fd.append('denoise',    tState.tDenoise);
+  fd.append('deskew',     tState.tDeskew);
+  fd.append('border_remove', tState.tBorder);
+
+  try {
+    const res  = await fetch('/upload', { method:'POST', body:fd });
+    const data = await res.json();
+
+    clearInterval(iv);
+    bar.style.width = '100%';
+    steps.forEach(id => {
+      document.getElementById(id).classList.remove('active');
+      document.getElementById(id).classList.add('done');
+    });
+    step.textContent = '✅ Done';
+
+    setTimeout(() => {
+      document.getElementById('prog').style.display = 'none';
+      renderResults(data);
+    }, 600);
+  } catch(e) {
+    clearInterval(iv);
+    alert('Error: ' + e.message);
+  }
+
+  btn.disabled = false; btn.innerHTML = '<span>🚀</span> Process Now';
+}
+
+// ── Render results ─────────────────────────────────────────────────────────
+function renderResults(data) {
+  const cont = document.getElementById('resCont');
+  cont.innerHTML = '';
+  document.getElementById('resSec').style.display = 'block';
+
+  let good = 0;
+  for (const r of data) {
+    if (r.error) {
+      cont.innerHTML += `<div class="err-card">⚠️ ${r.error}</div>`;
+      continue;
+    }
+    tokens.push(r.token);
+    allResults.push({ ...r, rotation: 0 });
+    good++;
+    const idx = allResults.length - 1;
+
+    const sizeIn  = r.info_in?.size_kb  || '?';
+    const sizeOut = r.info_out?.size_kb || '?';
+    const dimOut  = r.info_out ? `${r.info_out.width}×${r.info_out.height}` : '';
+
+    const card = document.createElement('div');
+    card.className = 'rcard';
+    card.innerHTML = `
+      <div class="rcard-head">
+        <div class="rcard-fn">📄 ${r.original_name}</div>
+        <div class="rcard-meta">
+          <span class="info-chip">${dimOut}</span>
+          <span class="info-chip">${sizeIn}KB → ${sizeOut}KB</span>
+          <span class="badge">✅ Cleaned</span>
+        </div>
+      </div>
+      <div class="prev-wrap">
+        <div class="prev-pane">
+          <div class="prev-lbl"><span class="dot red"></span>Original</div>
+          <img src="data:image/jpeg;base64,${r.before}" onclick="openModal('${r.token}','${r.original_name}','${r.before}','${r.after}','${r.download_name}','${r.after_full}')">
+        </div>
+        <div class="prev-pane">
+          <div class="prev-lbl"><span class="dot green"></span>Cleaned</div>
+          <div class="rot-img-box" id="ribox_${idx}" onclick="openModal('${r.token}','${r.original_name}','${r.before}','${r.after}','${r.download_name}','${r.after_full}')">
+            <img id="cimg_${idx}" src="data:image/jpeg;base64,${r.after}">
+          </div>
+          <div class="rot-bar">
+            <button class="rot-btn" onclick="rotCard(${idx},-90)"><span class="ri">↺</span> CCW</button>
+            <button class="rot-btn" onclick="rotCard(${idx},90)"><span class="ri">↻</span> CW</button>
+            <div class="rot-divider"></div>
+            <span class="rot-deg" id="rdeg_${idx}">0°</span>
+            <div class="rot-divider"></div>
+            <button class="rot-reset" onclick="rotCard(${idx},0,true)">↩ Reset</button>
+          </div>
+        </div>
+      </div>
+      <div class="rcard-foot">
+        <a class="dl-btn" id="dlbtn_${idx}" href="/download/${encodeURIComponent(r.token)}" download="${r.download_name}">⬇️ Download PNG</a>
+        <button class="preview-btn" onclick="openModal('${r.token}','${r.original_name}','${r.before}','${r.after}','${r.download_name}','${r.after_full}')">🔍 Full Preview</button>
+        <button class="print-btn" onclick="printSingle(${idx})">🖨️ Print</button>
+      </div>
+    `;
+    cont.appendChild(card);
+  }
+
+  document.getElementById('resCount').textContent = `(${good})`;
+}
+
+// ── Modal ──────────────────────────────────────────────────────────────────
+function openModal(token, name, beforeB64, afterB64, dlName, afterFullB64) {
+  currentModalAfterB64 = afterFullB64;
+  currentModalToken    = token;
+  currentModalFilename = dlName;
+
+  document.getElementById('modalTitle').textContent = '🔍 ' + name;
+  document.getElementById('modalBody').innerHTML = `
+    <div class="modal-pane">
+      <h4>📷 Original</h4>
+      <img src="data:image/jpeg;base64,${beforeB64}">
+    </div>
+    <div class="modal-pane">
+      <h4>✨ Cleaned</h4>
+      <img src="data:image/png;base64,${afterFullB64}">
+    </div>
+  `;
+  document.getElementById('modalDlBtn').href     = `/download/${encodeURIComponent(token)}`;
+  document.getElementById('modalDlBtn').download = dlName;
+  document.getElementById('previewModal').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('previewModal').classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+document.getElementById('previewModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('previewModal')) closeModal();
+});
+
+// ── Rotation ──────────────────────────────────────────────────────────────────
+//
+// THE FIX: For 90/270° we compute a scale factor so the rotated image
+// fits inside the 260px box WITHOUT overflowing. Formula:
+//   scale = min(containerW / imageH, containerH / imageW)
+// This is the CORRECT formula — previous code was double-scaling.
+//
+function rotCard(idx, deg, reset) {
+  const r = allResults[idx];
+  if (reset) {
+    r.rotation = 0;
+  } else {
+    r.rotation = ((r.rotation || 0) + deg + 360) % 360;
+  }
+  const rot  = r.rotation;
+  const box  = document.getElementById('ribox_' + idx);
+  const img  = document.getElementById('cimg_'  + idx);
+  const badge = document.getElementById('rdeg_' + idx);
+
+  if (!box || !img) return;
+
+  const applyTransform = () => {
+    if (rot === 0) {
+      img.style.transform = '';
+      img.style.maxWidth  = '100%';
+      img.style.maxHeight = '260px';
+      img.style.width     = '';
+      img.style.height    = '';
+    } else {
+      const nw = img.naturalWidth  || 400;
+      const nh = img.naturalHeight || 300;
+      const bw = box.clientWidth   || 300;
+      const bh = 260;
+
+      let scale;
+      if (rot === 90 || rot === 270) {
+        // After 90° rotation: image visual-width = nh, visual-height = nw
+        // Must fit: nh*s ≤ bw  AND  nw*s ≤ bh
+        scale = Math.min(bw / nh, bh / nw);
+      } else {
+        // 180°: same dims, just flipped
+        scale = Math.min(bw / nw, bh / nh, 1);
+      }
+      // Remove max constraints so scale controls size
+      img.style.maxWidth  = 'none';
+      img.style.maxHeight = 'none';
+      img.style.width     = nw + 'px';
+      img.style.height    = nh + 'px';
+      img.style.transform = 'rotate(' + rot + 'deg) scale(' + scale + ')';
+    }
+  };
+
+  if (img.complete && img.naturalWidth) {
+    applyTransform();
+  } else {
+    img.onload = applyTransform;
+  }
+
+  if (badge) {
+    badge.textContent = rot + '°';
+    badge.classList.toggle('lit', rot !== 0);
+  }
+
+  // Build canvas for download/print
+  const tmp = new Image();
+  tmp.onload = () => {
+    if (rot === 0) {
+      r.rotated_b64 = null;
+      const dl = document.getElementById('dlbtn_' + idx);
+      if (dl) {
+        if (dl._pu) { URL.revokeObjectURL(dl._pu); dl._pu = null; }
+        dl.href = '/download/' + encodeURIComponent(r.token);
+        dl.download = r.download_name;
+      }
+      return;
+    }
+    const sw = tmp.naturalWidth, sh = tmp.naturalHeight;
+    const [cw, ch] = (rot === 90 || rot === 270) ? [sh, sw] : [sw, sh];
+    const cnv = document.createElement('canvas');
+    cnv.width = cw; cnv.height = ch;
+    const ctx = cnv.getContext('2d');
+    ctx.translate(cw/2, ch/2);
+    ctx.rotate(rot * Math.PI / 180);
+    ctx.drawImage(tmp, -sw/2, -sh/2);
+    r.rotated_b64 = cnv.toDataURL('image/png').split(',')[1];
+    const dl = document.getElementById('dlbtn_' + idx);
+    if (dl) {
+      const blob = b64Blob(r.rotated_b64);
+      if (dl._pu) URL.revokeObjectURL(dl._pu);
+      dl._pu = URL.createObjectURL(blob);
+      dl.href = dl._pu;
+      dl.download = 'rotated_' + r.download_name;
+    }
+  };
+  tmp.src = 'data:image/png;base64,' + r.after_full;
+}
+
+function b64Blob(b64) {
+  const bytes = atob(b64); const ab = new ArrayBuffer(bytes.length); const ia = new Uint8Array(ab);
+  for (let i = 0; i < bytes.length; i++) ia[i] = bytes.charCodeAt(i);
+  return new Blob([ab], { type: 'image/png' });
+}
+
+function getFinalB64(r) { return r.rotated_b64 || r.after_full; }
+
+function printSingle(idx) {
+  const r = allResults[idx]; const b64 = getFinalB64(r);
+  const html = `<!DOCTYPE html><html><head><title>${r.original_name}</title>
+  <style>*{margin:0;padding:0;box-sizing:border-box}html,body{width:100%;height:100%;background:#fff}body{display:flex;align-items:center;justify-content:center}img{max-width:100vw;max-height:100vh;object-fit:contain}@media print{img{page-break-inside:avoid}}</style>
+  </head><body><img src="data:image/png;base64,${b64}"></body></html>`;
+  const frame = document.getElementById('printFrame');
+  frame.style.display='block'; frame.srcdoc=html;
+  frame.onload=()=>{ setTimeout(()=>{ frame.contentWindow.print(); frame.style.display='none'; },300); };
+}
+
+function printImage(b64, name) {
+  const html = `<!DOCTYPE html><html><head><title>${name}</title>
+  <style>*{margin:0;padding:0;box-sizing:border-box}body{background:#fff}
+  img{width:100%;height:auto;display:block;page-break-inside:avoid}
+  @media print{body{margin:0}img{max-height:100vh;object-fit:contain}}</style>
+  </head><body><img src="data:image/png;base64,${b64}"></body></html>`;
+  const frame = document.getElementById('printFrame');
+  frame.style.display = 'block';
+  frame.srcdoc = html;
+  frame.onload = () => { frame.contentWindow.print(); frame.style.display = 'none'; };
+}
+
+function printModal() {
+  if (currentModalAfterB64) printImage(currentModalAfterB64, currentModalFilename);
+}
+
+function printAll() {
+  if (!allResults.length) return;
+  const imgs = allResults.map(r => {
+    const b64 = getFinalB64(r);
+    return `<div class="pg"><img src="data:image/png;base64,${b64}"><p>${r.original_name}</p></div>`;
+  }).join('');
+  const html = `<!DOCTYPE html><html><head><title>All Documents</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}body{background:#fff}
+    .pg{width:100vw;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;page-break-after:always;page-break-inside:avoid;overflow:hidden}
+    .pg:last-child{page-break-after:avoid}
+    img{max-width:90vw;max-height:88vh;object-fit:contain}
+    p{font-family:sans-serif;font-size:11px;color:#666;margin-top:6px;text-align:center}
+    @media print{.pg{page-break-after:always}.pg:last-child{page-break-after:avoid}}
+  </style>
+  </head><body>${imgs}</body></html>`;
+  const frame = document.getElementById('printFrame');
+  frame.style.display='block'; frame.srcdoc=html;
+  frame.onload=()=>{ setTimeout(()=>{ frame.contentWindow.print(); frame.style.display='none'; },400); };
+}
+
+// ── ZIP Download ───────────────────────────────────────────────────────────
+async function dlZip() {
+  if (!tokens.length) return;
+  const res  = await fetch('/download-zip', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ tokens })
+  });
+  const blob = await res.blob();
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = 'cleaned_documents.zip';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+
+// ── Theme Toggle ────────────────────────────────────────────────────────────
+const THEME_KEY = 'docScanTheme';
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const icon = document.getElementById('themeIcon');
+  if (icon) {
+    icon.style.transform = 'rotate(360deg) scale(1.3)';
+    icon.textContent = theme === 'light' ? '☀️' : '🌙';
+    setTimeout(() => { icon.style.transform = ''; }, 400);
+  }
+  localStorage.setItem(THEME_KEY, theme);
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+}
+
+// Init: use saved preference, else system preference
+(function initTheme() {
+  const saved = localStorage.getItem(THEME_KEY);
+  if (saved) { applyTheme(saved); return; }
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  applyTheme(prefersDark ? 'dark' : 'light');
+})();
+
+// Listen for system theme change
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+  if (!localStorage.getItem(THEME_KEY)) applyTheme(e.matches ? 'dark' : 'light');
+});
+
+// ── Keyboard shortcuts ─────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeModal(); }
+  if (e.key === 'Enter' && !e.target.matches('input,button,textarea,select')) run();
+  if ((e.key === 'd' || e.key === 'D') && !e.target.matches('input,button,textarea,select')) toggleTheme();
+});
+</script>
+
+</body>
+</html>
